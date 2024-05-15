@@ -3,7 +3,7 @@ import os
 from map import plot_map_to_file, get_coordinates, two_opt, text_of_route
 
 # Get the token from the environment variable
-token = os.environ['TELEGRAM_BOT_TOKEN']
+token = os.environ['TOKEN']
 
 bot = telebot.TeleBot(token)
 
@@ -60,11 +60,16 @@ def add_address_type_markup():
     markup.add(postamat_button, branch_button)
     return markup
 
+def remove_duplicates(lst):
+    return list(set(lst))
+
 @bot.callback_query_handler(func=lambda call: call.data == "done")
 def show_addresses(call):
+    global addresses
     if not addresses:
         bot.send_message(call.message.chat.id, "Нет добавленных адресов.")
     else:
+        addresses = remove_duplicates(addresses)
         address_list = "\n".join(addresses)
         bot.send_message(call.message.chat.id, "Ваши адреса:\n" + address_list, reply_markup=calculate_markup())
 

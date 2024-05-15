@@ -48,6 +48,10 @@ def get_coordinates(texts):
 
     return coordinates
 
+def remove_duplicates(texts):
+    unique_texts = list(dict.fromkeys(texts))
+    return unique_texts
+
 def text_of_route(route):
     route_text = ''
     for i in range(len(route) - 1):
@@ -56,6 +60,9 @@ def text_of_route(route):
     return route_text
 
 def plot_map(texts, filename):
+    # Удаляем дублирующиеся элементы
+    texts = remove_duplicates(texts)
+    
     # Получаем координаты
     points = [{'number': coordinate['number'], 'coordinate': (coordinate['latitude'], coordinate['longitude'])} for coordinate in get_coordinates(texts)]
 
@@ -96,3 +103,4 @@ def plot_map(texts, filename):
 
 def plot_map_to_file(texts, filename='map.png'):
     plot_map(texts, filename)
+
