@@ -1,50 +1,45 @@
 import math
-import requests
-from bs4 import BeautifulSoup
 import matplotlib.pyplot as plt
 import cartopy.crs as ccrs
 import numpy as np
 from PIL import Image
 from calc import two_opt
+import json
+
 
 def distance(p1, p2):
     return math.sqrt((p1[0] - p2[0])**2 + (p1[1] - p2[1])**2)
 
-def get_coordinates(texts):
+def get_coordinates(texts, filename='new_post_offices.json'):
+    with open(filename, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    
     coordinates = []
 
     for text in texts:
         number = text.split()[-1]
-        if "почтомат" in text.lower():
-            url = f'http://new-post.orilider.com/Kyivska_region/Kyiv_city/packstation_{number}.shtml'
-        elif "отделение" in text.lower():
-            url = f'http://new-post.orilider.com/Kyivska_region/Kyiv_city/office_{number}.shtml'
+        type_text = text.split()[0].lower()
+
+        if "почтомат" in type_text:
+            office_type = "Поштомат"
+        elif "отделение" in type_text:
+            office_type = "Відділення"
         else:
-            print(f"Unsupported text: {text}")
+            print(f"Unsupported text type: {text}")
             continue
+
+        office = next((item for item in data if item['number'] == number and item['type'] == office_type), None)
         
-        response = requests.get(url)
-
-        if response.status_code == 200:
-            html_code = response.text
-            soup = BeautifulSoup(html_code, 'html.parser')
-
-            meta_latitude = soup.find('meta', {'itemprop': 'latitude'})
-            meta_longitude = soup.find('meta', {'itemprop': 'longitude'})
-
-            latitude = float(meta_latitude['content']) if meta_latitude else None
-            longitude = float(meta_longitude['content']) if meta_longitude else None
-
-            if latitude and longitude:
-                coordinates.append({
-                    'number': number,
-                    'latitude': latitude,
-                    'longitude': longitude
-                })
-            else:
-                print(f'Failed to get coordinates for {text}')
+        if office:
+            latitude = float(office['coordinates']['latitude'])
+            longitude = float(office['coordinates']['longitude'])
+            coordinates.append({
+                'number': number,
+                'latitude': latitude,
+                'longitude': longitude
+            })
         else:
-            print(f'Failed to get the page for {text}. Status code: {response.status_code}')
+            print(f"Failed to find office for {text}")
 
     return coordinates
 
@@ -104,3 +99,7 @@ def plot_map(texts, filename):
 def plot_map_to_file(texts, filename='map.png'):
     plot_map(texts, filename)
 
+
+addresses123 = ['Почтомат 5245', 'Почтомат 45553', 'Почтомат 36482', 'Почтомат 25351', 'Почтомат 35220', 'Почтомат 36563']
+
+plot_map_to_file(addresses123)

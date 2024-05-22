@@ -20,27 +20,33 @@ def start_message(message):
 @bot.message_handler(func=lambda message: message.text == "Добавить адрес")
 def add_address_type(message):
     markup = telebot.types.InlineKeyboardMarkup()
-    postamat_button = telebot.types.InlineKeyboardButton("Добавить почтомат", callback_data="add_postamat")
-    branch_button = telebot.types.InlineKeyboardButton("Добавить отделение", callback_data="add_branch")
-    markup.add(postamat_button, branch_button)
-    bot.send_message(message.chat.id, "Выберите тип адреса:", reply_markup=markup)
+    postamats_button = telebot.types.InlineKeyboardButton("Добавить почтоматы", callback_data="add_postamats")
+    branches_button = telebot.types.InlineKeyboardButton("Добавить отделения", callback_data="add_branches")
+    markup.add(postamats_button, branches_button)
+    bot.send_message(message.chat.id, "Выберите тип адресов:", reply_markup=markup)
 
-@bot.callback_query_handler(func=lambda call: call.data in ["add_postamat", "add_branch"])
-def add_address_number(call):
-    if call.data == "add_postamat":
+@bot.callback_query_handler(func=lambda call: call.data in ["add_postamats", "add_branches"])
+def add_address_numbers(call):
+    if call.data == "add_postamats":
         address_type = "Почтомат"
-    elif call.data == "add_branch":
+    elif call.data == "add_branches":
         address_type = "Отделение"
-    bot.send_message(call.message.chat.id, f"Введите номер {address_type.lower()}а:", reply_markup=add_more_addresses_markup())
-    bot.register_next_step_handler(call.message, save_address(address_type))
+    bot.send_message(call.message.chat.id, f"Введите номера {address_type.lower()}ов, каждый с новой строки:", reply_markup=add_more_addresses_markup())
+    bot.register_next_step_handler(call.message, save_addresses(address_type))
 
-def save_address(address_type):
-    def inner_save_address(message):
-        number = message.text
-        address = f"{address_type} {number}"
-        addresses.append(address)
-        bot.send_message(message.chat.id, f"{address_type} с номером {number} успешно добавлен.", reply_markup=add_more_addresses_markup())
-    return inner_save_address
+def save_addresses(address_type):
+    def inner_save_addresses(message):
+        numbers = message.text.split("\n")
+        added_addresses = []
+        for number in numbers:
+            address = f"{address_type} {number.strip()}"
+            if address not in addresses:
+                addresses.append(address)
+                added_addresses.append(address)
+        
+        added_list = "\n".join(added_addresses)
+        bot.send_message(message.chat.id, f"Следующие адреса успешно добавлены:\n{added_list}", reply_markup=add_more_addresses_markup())
+    return inner_save_addresses
 
 def add_more_addresses_markup():
     markup = telebot.types.InlineKeyboardMarkup()
@@ -51,13 +57,13 @@ def add_more_addresses_markup():
 
 @bot.callback_query_handler(func=lambda call: call.data == "add_address")
 def add_address_handler(call):
-    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Выберите тип адреса:", reply_markup=add_address_type_markup())
+    bot.edit_message_text(chat_id=call.message.chat.id, message_id=call.message.message_id, text="Выберите тип адресов:", reply_markup=add_address_type_markup())
 
 def add_address_type_markup():
     markup = telebot.types.InlineKeyboardMarkup()
-    postamat_button = telebot.types.InlineKeyboardButton("Добавить почтомат", callback_data="add_postamat")
-    branch_button = telebot.types.InlineKeyboardButton("Добавить отделение", callback_data="add_branch")
-    markup.add(postamat_button, branch_button)
+    postamats_button = telebot.types.InlineKeyboardButton("Добавить почтоматы", callback_data="add_postamats")
+    branches_button = telebot.types.InlineKeyboardButton("Добавить отделения", callback_data="add_branches")
+    markup.add(postamats_button, branches_button)
     return markup
 
 def remove_duplicates(lst):
@@ -110,6 +116,7 @@ def start_markup():
     markup = telebot.types.ReplyKeyboardMarkup(resize_keyboard=True)
     button = telebot.types.KeyboardButton("Добавить адрес")
     markup.add(button)
+    print("Бот запущен")
     return markup
-
+    
 bot.infinity_polling()
